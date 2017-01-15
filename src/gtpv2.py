@@ -2,11 +2,15 @@
 # An GTPv2 scapy implementation to provide LTE GTP-C traffic
 
 __VERSION__ = 'v0.1'
+
 from scapy.packet import *
 from scapy.fields import *
 from scapy.layers.inet import IP, UDP
 from scapy.layers.sctp import SCTP
 from scapy.layers.inet6 import IPv6
+from ie import *
+
+
 
 import logging
 import time
@@ -151,14 +155,15 @@ class EchoRequest(Packet):
     """
     name = "GTPv2 Echo Request"
 
-    fields_desc = [
-        
-    ]
+
 
 
 bind_layers(GTPv2Header, EchoRequest, {'message_type': 1})
 
 
+# bind information elements to correct type
+
+bind_layers(EchoRequest, IERecovery)
 
 
 if __name__ == "__main__":
