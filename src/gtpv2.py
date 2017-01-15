@@ -160,12 +160,21 @@ class EchoRequest(Packet):
     ]
 
 
+class EchoResponse(Packet):
+    """
+    A GTPv2 echo response -Message Type 2
+
+    Note that T in the header is allowed to be 0 for this message
+    """
+    name = "GTPv2 Echo Response"
+
+    fields_desc = [
+        PacketListField("Information Elements", [IERecovery()], IE_Lookup)
+    ]
+
+
 bind_layers(GTPv2Header, EchoRequest, {'message_type': 1})
-
-
-# bind information elements to correct type
-
-bind_layers(EchoRequest, IERecovery)
+bind_layers(GTPv2Header, EchoResponse, {'message_type': 2})
 
 
 if __name__ == "__main__":
