@@ -2,7 +2,7 @@
 Hold GTPv2 Information Element fields
 """
 from scapy.fields import *
-from scapy.packet import Packet
+from scapy.packet import Packet, Raw
 
 IEType = {
    0: "Reserved",
@@ -133,6 +133,10 @@ IEType = {
  }
 
 
+
+
+
+
 class IERecovery(Packet):
     """
     Packet that holds a Recovery counter Information Element (See 3GPP TS 29.274 V12.13.0 Section 8.5)
@@ -146,4 +150,31 @@ class IERecovery(Packet):
         BitField("instance", 0, 4),
         ByteField("counter", 0)
     ]
+
+
+class IENotImplemented(Packet):
+    name = "IE not implemented"
+    fields_desc = [
+        ByteEnumField("ietype", 0, IEType),
+        ShortField("length",  None),
+        StrLenField("data", "", length_from=lambda x: x.length)
+    ]
+
+
+IETypeCls = {
+    3: IERecovery
+}
+
+
+def IE_Lookup(pkt):
+    if len(pkt) < 1:
+        return Raw(pkt)
+    type = ord(pkt[0])    # type is held in first byte of an IE packet
+
+    cls = IETypeCls.get(type, Raw)
+
+    if cls == Raw:
+        cls = IENotImplemented      # We haven't implemented this one yet
+
+    return cls(pkt)             # Return an instance of the correct Packet
 

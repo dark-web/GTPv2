@@ -155,7 +155,9 @@ class EchoRequest(Packet):
     """
     name = "GTPv2 Echo Request"
 
-
+    fields_desc = [
+        PacketListField("Information Elements", [IERecovery()], IE_Lookup)
+    ]
 
 
 bind_layers(GTPv2Header, EchoRequest, {'message_type': 1})
