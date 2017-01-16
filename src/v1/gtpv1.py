@@ -4,9 +4,10 @@
 Implement GTPv1 User plane in a way that can detect responses (other versions don't seem able to do this
 """
 
+from scapy.all import *
 from scapy.packet import *
 from scapy.fields import *
-from scapy.layers.inet import IP, UDP
+from scapy.layers.inet import IP, UDP, ICMP
 from scapy.layers.sctp import SCTP
 from scapy.layers.inet6 import IPv6
 from scapy.sendrecv import *
@@ -40,6 +41,20 @@ Selection_Mode = { 11111100: "MS or APN",
 TeardownInd_value = { 254: "False",
                       255: "True" }
 
+class UDPExtensionHeader(Packet):
+    """
+    GTPv1 UDP Port Extension Header
+    """
+    name = "GTPv1 Extension Header"
+    fields_desc = [
+        ByteField("extension_len", 1),
+        ShortField("udp_port", 2152),
+        ByteField("next_header_type", 0)
+    ]
+
+    def extract_padding(self, s):
+        return "", s
+
 
 class GTPv1UserHeader(Packet):
     """
@@ -60,6 +75,7 @@ class GTPv1UserHeader(Packet):
         ConditionalField(ShortField("seq", 0), lambda pkt: pkt.S == 1 or pkt.PN == 1 or pkt.E == 1),
         ConditionalField(ByteField("npdu", 0), lambda pkt: pkt.S == 1 or pkt.PN == 1 or pkt.E == 1),
         ConditionalField(ByteField("next_extension_type", 0), lambda pkt: pkt.S == 1 or pkt.PN == 1 or pkt.E == 1),
+        ConditionalField(PacketField("extension-header", UDPExtensionHeader(), UDPExtensionHeader), lambda pkt: pkt.E == 1 and pkt.next_extension_type == 0x40)
     ]
 
     def post_build(self, pkt, pay):
@@ -81,6 +97,7 @@ class GTPv1UserHeader(Packet):
                           self.version == other.version and \
                           other.message_type == 1
         else:
+            print "Checking non-echo"
             return isinstance(other, GTPv1UserHeader) and \
                           self.version == other.version and \
                           self.payload.answers(other.payload)
@@ -103,9 +120,15 @@ class GTPErrorIndication(Packet):
     """
     name = "Error Indication"
     fields_desc = [
-        PacketField("TEIDI", IETEIDI(), IETEIDI),
-        PacketField("GTP-U_Peer_Addr", IEGTP_U_Peer_Address(), IEGTP_U_Peer_Address)
+        PacketListField("Information Elements", [IETEIDI(), IEGTP_U_Peer_Address()], IE_Lookup)
+        # PacketField("TEIDI", IETEIDI(), IETEIDI),
+        # PacketField("GTP-U_Peer_Addr", IEGTP_U_Peer_Address(), IEGTP_U_Peer_Address)
     ]
+
+    def answers(self, other):
+        print other.summary()
+        print self.summary()
+
 
 bind_layers(UDP, GTPv1UserHeader, {'dport': 2152})
 
@@ -114,9 +137,17 @@ bind_layers(GTPv1UserHeader, GTPEchoResponse, {'message_type': 2})
 bind_layers(GTPv1UserHeader, GTPErrorIndication, {'message_type': 26})
 
 
-
 if __name__ == "__main__":
-
-    tstPkt = IP(dst=sys.argv[1])/UDP(sport=2152)/GTPv1UserHeader(message_type=1)
-    print "Sending..." + tstPkt.summary()
-    ans, unans = sr(tstPkt)
+    interact(mydict=globals(), argv=sys.argv, mybanner="GTPv1 Add-on {}")
+    # tstPkt = IP(dst=sys.argv[1])/UDP(sport=2152)/GTPv1UserHeader(message_type=1)
+    # extPkt = IP(dst=sys.argv[1]) / UDP(sport=2152) / GTPv1UserHeader(message_type=1, E=1, next_extension_type=0x40)
+    # hexdump(extPkt)
+    # extPkt.show()
+    # print "Sending..." + tstPkt.summary()
+    # ans, unans = sr(tstPkt)
+    # ans.summary()
+    #
+    # if ans:
+    #     tunSpoof = IP(dst=sys.argv[1])/UDP(sport=2152)/GTPv1UserHeader(TEID=1)/IP()/ICMP()
+    #     ans, unans = sr(tunSpoof)
+    #     ans.summary()

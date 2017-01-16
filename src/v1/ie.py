@@ -92,7 +92,7 @@ class IERecovery(Packet):
     ]
 
     def extract_padding(self, s):
-        return s, ""
+        return "", s
 
 
 class IETEIDI(Packet):
@@ -105,6 +105,9 @@ class IETEIDI(Packet):
         IntField("TEIDI", 0)
     ]
 
+    def extract_padding(self, s):
+        return "", s
+
 
 
 class IEGTP_U_Peer_Address(Packet):
@@ -114,9 +117,13 @@ class IEGTP_U_Peer_Address(Packet):
     name = "GTP-U Peer Address"
     fields_desc = [
         ByteEnumField("type", 133, IEType),
-        FieldLenField("length", 4, length_of="address"),
-        StrLenField("address", '127.0.0.1', length_from='length')
+        ShortField("length", 4),
+        ConditionalField(IPField("v4_addr", '127.0.0.1'), lambda pkt: pkt.length == 4),
+        ConditionalField(BitField("v6_addr", 0, 128), lambda pkt: pkt.length == 16)
     ]
+
+    def extract_padding(self, s):
+        return "", s        # doing this stops payload processing as these are no layers but fields in a layer
 
 class IENotImplemented(Packet):
     name = "IE not implemented"
