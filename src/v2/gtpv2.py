@@ -169,9 +169,10 @@ class EchoResponse(Packet):
     name = "GTPv2 Echo Response"
 
     fields_desc = [
-        PacketListField("Information Elements", [IERecovery()], IE_Lookup)
+        PacketListField("information_elements", [IERecovery()], IE_Lookup)
     ]
 
+bind_layers(UDP, GTPv2Header, {'dport': 2123, 'sport': 2123})
 
 bind_layers(GTPv2Header, EchoRequest, {'message_type': 1})
 bind_layers(GTPv2Header, EchoResponse, {'message_type': 2})
