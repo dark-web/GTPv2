@@ -88,8 +88,7 @@ class GTPv1UserHeader(Packet):
 
 class GTPEchoResponse(Packet):
     """
-        A GTPv1 echo response -Message Type 2
-
+    A GTPv1 echo response - Message Type 2
     """
     name = "GTPv1 Echo Response"
 
@@ -97,16 +96,22 @@ class GTPEchoResponse(Packet):
         PacketListField("information_elements", [IERecovery()], IE_Lookup)
     ]
 
-    def answers(self, other):
-        # print self.summary()
-        print type(other)
-        return False
 
+class GTPErrorIndication(Packet):
+    """
+    A GTPv1 Error indication - Message Type 26
+    """
+    name = "Error Indication"
+    fields_desc = [
+        PacketField("TEIDI", IETEIDI(), IETEIDI),
+        PacketField("GTP-U_Peer_Addr", IEGTP_U_Peer_Address(), IEGTP_U_Peer_Address)
+    ]
 
 bind_layers(UDP, GTPv1UserHeader, {'dport': 2152})
 
 bind_layers(GTPv1UserHeader, IP, {'message_type': 255})
 bind_layers(GTPv1UserHeader, GTPEchoResponse, {'message_type': 2})
+bind_layers(GTPv1UserHeader, GTPErrorIndication, {'message_type': 26})
 
 
 

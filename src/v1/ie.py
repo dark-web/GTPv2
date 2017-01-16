@@ -92,7 +92,7 @@ class IERecovery(Packet):
     ]
 
     def extract_padding(self, s):
-        return "", s
+        return s, ""
 
 
 class IETEIDI(Packet):
@@ -104,6 +104,7 @@ class IETEIDI(Packet):
         ByteEnumField("type", 16, IEType),
         IntField("TEIDI", 0)
     ]
+
 
 
 class IEGTP_U_Peer_Address(Packet):
